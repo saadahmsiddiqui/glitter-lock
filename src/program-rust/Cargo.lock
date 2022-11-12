@@ -408,6 +408,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "glitter-lock"
+version = "0.1.0"
+dependencies = [
+ "arrayref",
+ "solana-program",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -703,15 +711,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ea3d908b0e36316caf9e9e2c4625cdde190a7e6f440d794667ed17a1855e725"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "program-rust"
-version = "0.1.0"
-dependencies = [
- "borsh",
- "borsh-derive",
- "solana-program",
 ]
 
 [[package]]

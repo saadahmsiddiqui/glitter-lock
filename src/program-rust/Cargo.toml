@@ -1,0 +1,11 @@
+[package]
+name = "glitter-lock"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arrayref = "0.3.6"
+solana-program = "1.14.7"
+
+[lib]
+crate-type = ["cdylib", "lib"]
