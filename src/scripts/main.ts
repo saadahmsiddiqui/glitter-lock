@@ -2,7 +2,7 @@ require("dotenv").config();
 import * as solanaWeb3 from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import { createPDAAccount } from "./lock";
-import { establishConnection, getBalance, getKeyPair, integerToByteArray, lamports } from "./utils";
+import { establishConnection, getBalance, getKeyPair, integerToByteArray, lamports, sleep } from "./utils";
 
 const programId = process.env.PROGRAM_ID;
 const main = async (): Promise<unknown> => {
@@ -36,16 +36,16 @@ const main = async (): Promise<unknown> => {
         let storedData = accountInfo?.data.toString("hex") as string;
         const isInitialized = storedData.slice(0, 2);
         const publicKey = storedData.slice(2, 2 + 64);
-        const amount = Number(`0x${storedData.slice(68, 68 + 16)}`);
+        const balanceLocked = await getBalance(connection, lockerPDA.keypair);
         const time = storedData.slice(84);
 
         console.log('Raw: ', storedData);
         console.log('Init: ', new BigNumber(isInitialized).toString());
         console.log('On Chain Public Key: ', publicKey, Buffer.from(lockerPDA.keypair.publicKey.toBytes()).toString("hex"))
-        console.log('Amount: ', amount);
+        console.log('Amount: ', balanceLocked);
         console.log('Time: ', time);
 
-
+        await sleep(1000 * 60 * 60)
         const unlockInstruction = new solanaWeb3.TransactionInstruction({
             keys: [
                 { pubkey: locker.publicKey, isSigner: true, isWritable: false },
