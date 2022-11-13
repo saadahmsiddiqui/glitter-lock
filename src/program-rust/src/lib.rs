@@ -1,19 +1,7 @@
-use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint,
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-};
+pub mod error;
+pub mod instruction;
+pub mod processor;
+pub mod state;
 
-entrypoint!(process_instruction);
-pub fn process_instruction(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    instruction_data: &[u8]
-) -> ProgramResult {
-    msg!("Hello World Rust program entrypoint");
-
-    Ok(())
-}
+#[cfg(not(feature = "no-entrypoint"))]
+pub mod entrypoint;
