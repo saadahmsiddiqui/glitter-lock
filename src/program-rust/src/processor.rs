@@ -67,6 +67,7 @@ impl Processor {
         lock.is_initialized = true;
         lock.locker_public_key = locker_pda.key.clone();
         lock.lock_time = clock.unix_timestamp;
+        GlitterLock::pack(lock, &mut locker_pda.data.borrow_mut())?;
         transfer(locker.key, &locker_pda.key, amount);
 
         Ok(())
@@ -98,6 +99,7 @@ impl Processor {
 
         lock.is_initialized = false;
         transfer(locker_pda.key, &lock.locker_public_key, lock.amount);
+        GlitterLock::pack(lock, &mut locker_pda.data.borrow_mut())?;
 
         Ok(())
     }
