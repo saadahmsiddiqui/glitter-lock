@@ -1,6 +1,5 @@
 require("dotenv").config();
 import * as solanaWeb3 from "@solana/web3.js";
-import BigNumber from "bignumber.js";
 import { createPDAAccount } from "./lock";
 import { establishConnection, getBalance, getKeyPair, integerToByteArray, lamports } from "./utils";
 
@@ -21,7 +20,6 @@ const main = async (): Promise<unknown> => {
             ...integerToByteArray(lamports(1))
         ])
 
-        console.log('Data: ', data);
         const lockInstruction = new solanaWeb3.TransactionInstruction({
             keys: [
                 { pubkey: locker.publicKey, isSigner: true, isWritable: false },
@@ -34,7 +32,7 @@ const main = async (): Promise<unknown> => {
         await solanaWeb3.sendAndConfirmTransaction(connection, new solanaWeb3.Transaction().add(lockInstruction), [locker]);
 
         const accountInfo = await connection.getAccountInfo(lockerPDA.keypair.publicKey);
-        console.log(`Account Data: ${accountInfo?.data}`);
+        console.log(`Account: ${accountInfo?.owner}\nAccount Data: ${accountInfo?.data.toString()}`);
 
         const unlockInstruction = new solanaWeb3.TransactionInstruction({
             keys: [
@@ -45,7 +43,8 @@ const main = async (): Promise<unknown> => {
             data: Buffer.from(Uint8Array.from([1]))
         });
 
-        await solanaWeb3.sendAndConfirmTransaction(connection, new solanaWeb3.Transaction().add(unlockInstruction), [locker]);
+        const inx_res = await solanaWeb3.sendAndConfirmTransaction(connection, new solanaWeb3.Transaction().add(unlockInstruction), [locker]);
+        console.log(inx_res)
 
         return Promise.resolve();
     } catch (err) {
