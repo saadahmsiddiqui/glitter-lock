@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "localnet:up": "set -x; solana-localnet down; set -e; solana-localnet up",
+    "localnet:down": "solana-localnet down",
+    "localnet:logs": "solana-localnet logs -f",
+    "main": "ts-node src/scripts/main.ts"
   },
   "repository": {
     "type": "git",
@@ -18,6 +22,11 @@
   },
   "homepage": "https://github.com/saadjhk/glitter-lock#readme",
   "dependencies": {
-    "@solana/web3.js": "^1.66.2"
+    "@solana/web3.js": "^1.66.2",
+    "bignumber.js": "^9.1.0",
+    "ts-node": "^10.9.1"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.3"
   }
 }
