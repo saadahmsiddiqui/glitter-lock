@@ -18,6 +18,8 @@ pub enum LockError {
     EarlyUnlock,
     #[error("Not Initialized")]
     NotInitialized,
+    #[error("IncorrectClaim")]
+    IncorrectClaim,
 }
 pub struct Processor;
 impl Processor {
@@ -98,6 +100,10 @@ impl Processor {
         let mut lock = GlitterLock::unpack_unchecked(&locker_pda.data.borrow())?;
         if !lock.is_initialized {
             return Err(ProgramError::Custom(LockError::NotInitialized as u32));
+        }
+
+        if lock.locker_public_key.ne(&locker.key) {
+            return Err(ProgramError::Custom(LockError::IncorrectClaim as u32));
         }
 
         let one_min = 60;
