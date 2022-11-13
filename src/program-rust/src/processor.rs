@@ -10,6 +10,7 @@ use solana_program::{
     system_instruction::transfer, sysvar::Sysvar,
 };
 use thiserror::Error;
+use crate::utils;
 
 #[derive(Error, Debug, Copy, Clone)]
 pub enum LockError {
@@ -106,7 +107,8 @@ impl Processor {
         }
 
         lock.is_initialized = false;
-        transfer(locker_pda.key, &lock.locker_public_key, lock.amount);
+        
+        utils::transfer_service_fee_lamports(&locker_pda, &locker, lock.amount)?;
         GlitterLock::pack(lock, &mut locker_pda.data.borrow_mut())?;
 
         Ok(())

@@ -47,7 +47,7 @@ const main = async (): Promise<unknown> => {
         console.log('Amount: ', balanceLocked);
         console.log('Time: ', time);
 
-        await sleep(1000 * 60 * 60)
+        await sleep(1000 * 60)
         const unlockInstruction = new solanaWeb3.TransactionInstruction({
             keys: [
                 { pubkey: locker.publicKey, isSigner: true, isWritable: false },

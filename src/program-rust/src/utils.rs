@@ -1,9 +1,6 @@
-use crate::errors::XBoothError;
-use crate::state::ExchangeBoothAccount;
-use borsh::BorshDeserialize;
 use solana_program::{
-    account_info::AccountInfo, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
-};
+    entrypoint::{ProgramResult},
+    account_info::AccountInfo, program_error::ProgramError, program_pack::Pack};
 
 pub fn amount_to_lamports(mint: &AccountInfo, amount: f64) -> Result<u64, ProgramError> {
     let mint_account_data = spl_token::state::Mint::unpack_from_slice(&mint.try_borrow_data()?)?;
@@ -13,14 +10,13 @@ pub fn amount_to_lamports(mint: &AccountInfo, amount: f64) -> Result<u64, Progra
     Ok(lamports)
 }
 
-fn transfer_service_fee_lamports(
+pub fn transfer_service_fee_lamports(
     from_account: &AccountInfo,
     to_account: &AccountInfo,
     amount_of_lamports: u64,
 ) -> ProgramResult {
-    // Does the from account have enough lamports to transfer?
     if **from_account.try_borrow_lamports()? < amount_of_lamports {
-        return Err(CustomError::InsufficientFundsForTransaction.into());
+        return Err(ProgramError::InsufficientFunds);
     }
     // Debit from_account and credit to_account
     **from_account.try_borrow_mut_lamports()? -= amount_of_lamports;
