@@ -11,8 +11,8 @@ const main = async (): Promise<unknown> => {
         const secretKey = Uint8Array.from(process.env.SECRET_KEY?.split(",").map(x => Number(x)) as number[]);
         const locker = getKeyPair(secretKey);
 
-        const balance = await getBalance(connection, locker);
-        console.log(`Balance of ${locker.publicKey}: ${balance}`);
+        let balance = await getBalance(connection, locker);
+        console.log(`Balance of Locker: ${locker.publicKey}: ${balance}`);
 
         const lockerPDA = await createPDAAccount(connection, new solanaWeb3.PublicKey(programId as string), locker, lamports(1));
 
@@ -39,6 +39,8 @@ const main = async (): Promise<unknown> => {
         const balanceLocked = await getBalance(connection, lockerPDA.keypair);
         const time = storedData.slice(84);
 
+        balance = await getBalance(connection, locker);
+        console.log(`Balance of Locker: ${locker.publicKey}: ${balance}`);
         console.log('Raw: ', storedData);
         console.log('Init: ', new BigNumber(isInitialized).toString());
         console.log('On Chain Public Key: ', publicKey, Buffer.from(lockerPDA.keypair.publicKey.toBytes()).toString("hex"))
@@ -57,6 +59,9 @@ const main = async (): Promise<unknown> => {
 
         const inx_res = await solanaWeb3.sendAndConfirmTransaction(connection, new solanaWeb3.Transaction().add(unlockInstruction), [locker]);
         console.log(inx_res)
+
+        balance = await getBalance(connection, locker);
+        console.log(`Balance of Locker: ${locker.publicKey}: ${balance}`);
 
         return Promise.resolve();
     } catch (err) {

@@ -7,7 +7,7 @@ use solana_program::{
     program_error::ProgramError,
     program_pack::Pack,
     pubkey::Pubkey,
-    system_instruction::transfer,
+    system_instruction::transfer, sysvar::Sysvar,
 };
 use thiserror::Error;
 
@@ -65,7 +65,7 @@ impl Processor {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
 
-        let clock = Clock::default();
+        let clock = Clock::get()?;
         lock.amount = amount;
         lock.is_initialized = true;
         lock.locker_public_key = locker_pda.key.clone();
@@ -100,7 +100,7 @@ impl Processor {
         }
 
         let one_min = 60;
-        let current_time = Clock::default().unix_timestamp;
+        let current_time = Clock::get()?.unix_timestamp;
         if lock.lock_time + one_min < current_time {
             return Err(ProgramError::Custom(LockError::EarlyUnlock as u32));
         }
