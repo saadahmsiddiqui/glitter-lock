@@ -1,17 +1,20 @@
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
+    clock::Clock,
     entrypoint::ProgramResult,
     msg,
-    program::{invoke},
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
-    clock::Clock,
-    sysvar::{rent::Rent, Sysvar},
+    system_instruction::{transfer}, program_pack::{Pack}
 };
+use crate::{instruction::GlitterLockInstruction, state::GlitterLock};
+use thiserror::Error;
 
-use crate::{error::LockError, instruction::GlitterLockInstruction, state::GlitterLock};
-
+#[derive(Error, Debug, Copy, Clone)]
+pub enum LockError {
+    #[error("Early Unlock")]
+    EarlyUnlock,
+}
 pub struct Processor;
 impl Processor {
     pub fn process(
@@ -28,72 +31,73 @@ impl Processor {
             }
             GlitterLockInstruction::Release => {
                 msg!("Instruction: Release");
-                Ok(())
+                Self::process_unlock(accounts, program_id)
             }
         }
     }
 
-    fn process_lock(
-        accounts: &[AccountInfo],
-        amount: u64,
-        program_id: &Pubkey,
-    ) -> ProgramResult {
-        let account_info_iter = &mut accounts.iter();
-        let initializer = next_account_info(account_info_iter)?;
+    fn process_lock(accounts: &[AccountInfo], amount: u64, program_id: &Pubkey) -> ProgramResult {
+        let accounts_iter = &mut accounts.iter();
 
-        if !initializer.is_signer {
-            return Err(ProgramError::MissingRequiredSignature);
-        }
+        let locker = next_account_info(accounts_iter)?;
+        let locker_pda = next_account_info(accounts_iter)?;
 
-        let temp_token_account = next_account_info(account_info_iter)?;
-
-        let token_to_receive_account = next_account_info(account_info_iter)?;
-        if *token_to_receive_account.owner != spl_token::id() {
+        if locker_pda.owner != program_id {
             return Err(ProgramError::IncorrectProgramId);
         }
 
-        let lock_account = next_account_info(account_info_iter)?;
-        let rent = &Rent::from_account_info(next_account_info(account_info_iter)?)?;
-
-        if !rent.is_exempt(lock_account.lamports(), lock_account.data_len()) {
-            return Err(LockError::NotRentExempt.into());
+        if !locker.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
         }
 
-        let mut lock_info = GlitterLock::unpack_unchecked(&lock_account.try_borrow_data()?)?;
-        if lock_info.is_initialized() {
+        let lamports = locker.lamports();
+
+        if lamports.lt(&amount) {
+            return Err(ProgramError::InsufficientFunds);
+        }
+
+        let mut lock = GlitterLock::unpack_unchecked(&locker_pda.data.borrow())?;
+
+        if lock.is_initialized {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
 
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp;
-        lock_info.is_initialized = true;
-        lock_info.initializer_public_key = *initializer.key;
-        lock_info.temp_account_key = *temp_token_account.key;
-        lock_info.amount = amount;
-        lock_info.lock_time = current_timestamp;
+        let clock = Clock::default();
+        lock.amount = amount;
+        lock.is_initialized = true;
+        lock.locker_public_key = locker_pda.key.clone();
+        lock.lock_time = clock.unix_timestamp;
+        transfer(locker.key, &locker_pda.key, amount);
 
-        GlitterLock::pack(lock_info, &mut lock_account.try_borrow_mut_data()?)?;
-        let (pda, _nonce) = Pubkey::find_program_address(&[b"lock"], program_id);
+        Ok(())
+    }
 
-        let token_program = next_account_info(account_info_iter)?;
-        let owner_change_ix = spl_token::instruction::set_authority(
-            token_program.key,
-            temp_token_account.key,
-            Some(&pda),
-            spl_token::instruction::AuthorityType::AccountOwner,
-            initializer.key,
-            &[&initializer.key],
-        )?;
+    fn process_unlock(
+        accounts: &[AccountInfo], program_id: &Pubkey
+    ) -> ProgramResult {
+        let accounts_iter = &mut accounts.iter();
 
-        msg!("Calling the token program to transfer token account ownership...");
-        invoke(
-            &owner_change_ix,
-            &[
-                temp_token_account.clone(),
-                initializer.clone(),
-                token_program.clone(),
-            ],
-        )?;
+        let locker = next_account_info(accounts_iter)?;
+        let locker_pda = next_account_info(accounts_iter)?;
+
+        if locker_pda.owner != program_id {
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        if !locker.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+
+        let mut lock = GlitterLock::unpack_unchecked(&locker_pda.data.borrow())?;
+
+        let one_min = 60;
+        let current_time = Clock::default().unix_timestamp;
+        if lock.lock_time + one_min < current_time {
+            return Err(ProgramError::Custom(LockError::EarlyUnlock as u32))
+        }
+
+        lock.is_initialized = false;
+        transfer(locker_pda.key, &lock.locker_public_key, lock.amount);
 
         Ok(())
     }
