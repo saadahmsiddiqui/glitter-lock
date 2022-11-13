@@ -1,19 +1,22 @@
+use crate::{instruction::GlitterLockInstruction, state::GlitterLock};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
+    program_pack::Pack,
     pubkey::Pubkey,
-    system_instruction::{transfer}, program_pack::{Pack}
+    system_instruction::transfer,
 };
-use crate::{instruction::GlitterLockInstruction, state::GlitterLock};
 use thiserror::Error;
 
 #[derive(Error, Debug, Copy, Clone)]
 pub enum LockError {
     #[error("Early Unlock")]
     EarlyUnlock,
+    #[error("Not Initialized")]
+    NotInitialized,
 }
 pub struct Processor;
 impl Processor {
@@ -73,13 +76,15 @@ impl Processor {
         Ok(())
     }
 
-    fn process_unlock(
-        accounts: &[AccountInfo], program_id: &Pubkey
-    ) -> ProgramResult {
+    fn process_unlock(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
 
         let locker = next_account_info(accounts_iter)?;
         let locker_pda = next_account_info(accounts_iter)?;
+
+        if locker_pda.data_len() == 0 {
+            return Err(ProgramError::Custom(LockError::NotInitialized as u32));
+        }
 
         if locker_pda.owner != program_id {
             return Err(ProgramError::IncorrectProgramId);
@@ -90,11 +95,14 @@ impl Processor {
         }
 
         let mut lock = GlitterLock::unpack_unchecked(&locker_pda.data.borrow())?;
+        if !lock.is_initialized {
+            return Err(ProgramError::Custom(LockError::NotInitialized as u32));
+        }
 
         let one_min = 60;
         let current_time = Clock::default().unix_timestamp;
         if lock.lock_time + one_min < current_time {
-            return Err(ProgramError::Custom(LockError::EarlyUnlock as u32))
+            return Err(ProgramError::Custom(LockError::EarlyUnlock as u32));
         }
 
         lock.is_initialized = false;
