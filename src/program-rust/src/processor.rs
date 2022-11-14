@@ -71,7 +71,7 @@ impl Processor {
         let clock = Clock::get()?;
         lock.amount = amount;
         lock.is_initialized = true;
-        lock.locker_public_key = locker_pda.key.clone();
+        lock.locker_public_key = locker.key.clone();
         lock.lock_time = clock.unix_timestamp;
         GlitterLock::pack(lock, &mut locker_pda.data.borrow_mut())?;
         transfer(locker.key, &locker_pda.key, amount);

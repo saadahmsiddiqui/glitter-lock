@@ -8,6 +8,8 @@
     "localnet:up": "set -x; solana-localnet down; set -e; solana-localnet up",
     "localnet:down": "solana-localnet down",
     "localnet:logs": "solana-localnet logs -f",
+    "build:program": "cd ./src/program-rust;cargo build-bpf -- -Z unstable-options --out-dir ../../out/;",
+    "deploy:program": "solana deploy ./out/glitter_lock.so",
     "main": "ts-node src/scripts/main.ts"
   },
   "repository": {
