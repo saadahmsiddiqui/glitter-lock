@@ -2,7 +2,7 @@ import * as solanaWeb3 from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 
 export const establishConnection = async (): Promise<solanaWeb3.Connection> => {
-  const rpcUrl = "http://127.0.0.1:8899";
+  const rpcUrl = "https://api.devnet.solana.com";
   const connection = new solanaWeb3.Connection(rpcUrl, "confirmed");
   console.log("Connection to cluster established:", rpcUrl);
   return connection;

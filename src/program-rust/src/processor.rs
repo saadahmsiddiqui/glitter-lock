@@ -108,7 +108,7 @@ impl Processor {
 
         let one_min = 60;
         let current_time = Clock::get()?.unix_timestamp;
-        if lock.lock_time + one_min < current_time {
+        if lock.lock_time + one_min > current_time {
             return Err(ProgramError::Custom(LockError::EarlyUnlock as u32));
         }
 
